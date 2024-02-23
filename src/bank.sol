@@ -4,14 +4,16 @@
 
 pragma solidity ^0.8.19;
 
-import { OwnableInternal, OwnableStorage } from "../lib/solidstate-solidity/contracts/access/OwnableInternal.sol";
+import { AccessControlInternal } from "../lib/solidstate-solidity/contracts/access/AccessControlInternal.sol";
+import { AccessControlStorage } from "../lib/solidstate-solidity/contracts/access/AccessControlStorage.sol";
+
 import { Math } from "./mixin/math.sol";
 import { Flog } from "./mixin/flog.sol";
 import { Palm } from "./mixin/palm.sol";
 import { Gem }  from "../lib/gemfab/src/gem.sol";
 import { Feedbase } from "../lib/feedbase/src/Feedbase.sol";
 
-abstract contract Bank is Math, Flog, Palm, OwnableInternal {
+abstract contract Bank is Math, Flog, Palm, AccessControlInternal {
 
     // per-collateral type accounting
     struct Ilk {
@@ -120,7 +122,7 @@ abstract contract Bank is Math, Flog, Palm, OwnableInternal {
     }
 
     function owner() internal view returns (address) {
-        return OwnableStorage.layout().owner;
+        return AccessControlStorage.layout().owner;
     }
 
     function must(uint actual, uint lo, uint hi) internal pure {

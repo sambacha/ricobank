@@ -12,6 +12,7 @@ remappings = [
     'feedbase/=lib/feedbase/src/',
     'gemfab/=lib/gemfab/src',
     'hardhat/=node_modules/hardhat/',
+    "solidstate-solidity/=lib/solidstate-solidity/contracts/",
 ]
 optimizer=true
 optimizer-runs=10000

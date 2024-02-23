@@ -9,7 +9,10 @@
 
 pragma solidity ^0.8.19;
 
-import {Diamond, IDiamondCuttable} from "../lib/solidstate-solidity/contracts/proxy/diamond/Diamond.sol";
+import {Diamond} from "../lib/solidstate-solidity/contracts/proxy/diamond/SolidStateDiamond.sol";
+
+import { DiamondWritable } from "../lib/solidstate-solidity/contracts/proxy/diamond/writable/DiamondWritable.sol";
+import { IERC2535DiamondCutInternal } from "../lib/solidstate-solidity/contracts/interfaces/IERC2535DiamondCutInternal.sol";
 import {Block} from "../lib/feedbase/src/mixin/Read.sol";
 import {ChainlinkAdapter} from "../lib/feedbase/src/adapters/ChainlinkAdapter.sol";
 import {Divider} from "../lib/feedbase/src/combinators/Divider.sol";
@@ -37,7 +40,7 @@ contract Ball is Math, Ward {
     bytes32 internal constant HOW = bytes32(uint256(1000000000000003652500000000));
     bytes32 internal constant CAP = bytes32(uint256(1000000021970000000000000000));
     bytes32[] internal empty = new bytes32[](0);
-    IDiamondCuttable.FacetCutAction internal constant ADD = IDiamondCuttable.FacetCutAction.ADD;
+    IERC2535DiamondCutInternal.FacetCutAction internal constant ADD = IERC2535DiamondCutInternal.FacetCutAction.ADD;
 
     struct IlkParams {
         bytes32 ilk;
@@ -133,7 +136,7 @@ contract Ball is Math, Ward {
     }
 
     function setup(BallArgs calldata args) external _ward_ {
-        IDiamondCuttable.FacetCut[] memory facetCuts = new IDiamondCuttable.FacetCut[](4);
+        IERC2535DiamondCutInternal.FacetCut[] memory facetCuts = new IERC2535DiamondCutInternal.FacetCut[](4);
         bytes4[] memory filesels = new bytes4[](5);
         bytes4[] memory vatsels  = new bytes4[](21);
         bytes4[] memory vowsels  = new bytes4[](7);
@@ -180,10 +183,10 @@ contract Ball is Math, Ward {
         voxsels[4]  = Vox.tip.selector;
         voxsels[5]  = Vox.tau.selector;
 
-        facetCuts[0] = IDiamondCuttable.FacetCut(address(file), ADD, filesels);
-        facetCuts[1] = IDiamondCuttable.FacetCut(address(vat),  ADD, vatsels);
-        facetCuts[2] = IDiamondCuttable.FacetCut(address(vow),  ADD, vowsels);
-        facetCuts[3] = IDiamondCuttable.FacetCut(address(vox),  ADD, voxsels);
+        facetCuts[0] = IERC2535DiamondCutInternal.FacetCut(address(file), ADD, filesels);
+        facetCuts[1] = IERC2535DiamondCutInternal.FacetCut(address(vat),  ADD, vatsels);
+        facetCuts[2] = IERC2535DiamondCutInternal.FacetCut(address(vow),  ADD, vowsels);
+        facetCuts[3] = IERC2535DiamondCutInternal.FacetCut(address(vox),  ADD, voxsels);
         Diamond(payable(address(fbank))).acceptOwnership();
         Diamond(payable(address(fbank))).diamondCut(facetCuts, address(0), bytes(""));
 
