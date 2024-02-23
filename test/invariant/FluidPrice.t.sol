@@ -3,11 +3,11 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 
-import { Gem } from '../../lib/gemfab/src/gem.sol';
-import { Vat }  from '../../src/vat.sol';
-import { Vox }  from '../../src/vox.sol';
-import { BaseHelper } from "../BaseHelper.sol";
-import { ERC20Handler } from "./handlers/ERC20Handler.sol";
+import {Gem} from "../../lib/gemfab/src/gem.sol";
+import {Vat} from "../../src/vat.sol";
+import {Vox} from "../../src/vox.sol";
+import {BaseHelper} from "../BaseHelper.sol";
+import {ERC20Handler} from "./handlers/ERC20Handler.sol";
 
 // Uses single WETH ilk and modifies WETH and RICO price during run
 contract InvariantFluidPrice is Test, BaseHelper {
@@ -20,17 +20,17 @@ contract InvariantFluidPrice is Test, BaseHelper {
 
     function setUp() external {
         handler = new ERC20Handler();
-        bank    = handler.bank();
-        rico    = handler.rico();
-        vat     = Vat(bank);
-        vox     = Vox(bank);
-        cap     = vox.cap();
-        icap    = rinv(cap);
+        bank = handler.bank();
+        rico = handler.rico();
+        vat = Vat(bank);
+        vox = Vox(bank);
+        cap = vox.cap();
+        icap = rinv(cap);
 
         targetContract(address(handler));
         bytes4[] memory selectors = new bytes4[](10);
         selectors[0] = ERC20Handler.frob.selector;
-        selectors[1] = ERC20Handler.frob.selector;  // add frob twice to double probability
+        selectors[1] = ERC20Handler.frob.selector; // add frob twice to double probability
         selectors[2] = ERC20Handler.bail.selector;
         selectors[3] = ERC20Handler.keep.selector;
         selectors[4] = ERC20Handler.drip.selector;
@@ -39,25 +39,22 @@ contract InvariantFluidPrice is Test, BaseHelper {
         selectors[7] = ERC20Handler.wait.selector;
         selectors[8] = ERC20Handler.date.selector;
         selectors[9] = ERC20Handler.move.selector;
-        targetSelector(FuzzSelector({
-            addr:      address(handler),
-            selectors: selectors
-        }));
+        targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
     // all invariant tests combined for efficiency
     function invariant_core() external {
-        uint sup  = rico.totalSupply();
-        uint joy  = vat.joy();
-        uint debt = vat.debt();
-        uint rest = vat.rest();
-        uint sin  = vat.sin();
-        uint tart = vat.ilks(WETH_ILK).tart;
-        uint rack = vat.ilks(WETH_ILK).rack;
-        uint line = vat.ilks(WETH_ILK).line;
-        uint liqr = uint(vat.geth(WETH_ILK, 'liqr', empty));
-        uint way  = vox.way();
-        uint weth_val = handler.localWeth() * handler.weth_ref_max() / handler.minPar();
+        uint256 sup = rico.totalSupply();
+        uint256 joy = vat.joy();
+        uint256 debt = vat.debt();
+        uint256 rest = vat.rest();
+        uint256 sin = vat.sin();
+        uint256 tart = vat.ilks(WETH_ILK).tart;
+        uint256 rack = vat.ilks(WETH_ILK).rack;
+        uint256 line = vat.ilks(WETH_ILK).line;
+        uint256 liqr = uint256(vat.geth(WETH_ILK, "liqr", empty));
+        uint256 way = vox.way();
+        uint256 weth_val = handler.localWeth() * handler.weth_ref_max() / handler.minPar();
 
         // debt invariant
         assertEq(joy + sup, debt);
@@ -70,12 +67,12 @@ contract InvariantFluidPrice is Test, BaseHelper {
 
         // actors ink + weth should be constant outside of liquidations and frobs which benefit a different urn,
         // actors can't steal from others CDPs
-        for (uint i = 0; i < handler.NUM_ACTORS(); ++i) {
+        for (uint256 i = 0; i < handler.NUM_ACTORS(); ++i) {
             address actor = handler.actors(i);
-            int ink  = int(_ink(WETH_ILK, actor));
-            int weth = int(Gem(WETH).balanceOf(actor));
-            int off  = handler.ink_offset(actor);
-            int init = int(handler.ACTOR_WETH());
+            int256 ink = int256(_ink(WETH_ILK, actor));
+            int256 weth = int256(Gem(WETH).balanceOf(actor));
+            int256 off = handler.ink_offset(actor);
+            int256 init = int256(handler.ACTOR_WETH());
             assertEq(ink + weth, init + off);
         }
 

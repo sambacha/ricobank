@@ -4,16 +4,17 @@
 
 pragma solidity ^0.8.19;
 
-import { Bank } from "../bank.sol";
+import {Bank} from "../bank.sol";
 
 interface Hook {
     struct FHParams {
         address sender;
         bytes32 i;
         address u;
-        bytes   dink;
-        int256  dart;
+        bytes dink;
+        int256 dart;
     }
+
     struct BHParams {
         bytes32 i;
         address u;
@@ -26,28 +27,26 @@ interface Hook {
 
     function frobhook(FHParams calldata) external payable returns (bool safer);
     function bailhook(BHParams calldata) external payable returns (bytes memory);
-    function safehook(bytes32 i, address u) external view
-      returns (uint tot, uint cut, uint minttl);
+    function safehook(bytes32 i, address u) external view returns (uint256 tot, uint256 cut, uint256 minttl);
     function ink(bytes32 i, address u) external view returns (bytes memory);
 }
 
 abstract contract HookMix is Hook, Bank {
-
     // Sync with vat. Update joy and possibly line. Workaround for stack too deep
-    function vsync(bytes32 i, uint earn, uint owed, uint over) internal {
+    function vsync(bytes32 i, uint256 earn, uint256 owed, uint256 over) internal {
         VatStorage storage vs = getVatStorage();
 
         if (earn < owed) {
             // drop line value for this ilk as precaution
-            uint prev = vs.ilks[i].line;
-            uint loss = RAY * (owed - earn);
-            uint next = loss > prev ? 0 : prev - loss;
+            uint256 prev = vs.ilks[i].line;
+            uint256 loss = RAY * (owed - earn);
+            uint256 next = loss > prev ? 0 : prev - loss;
             vs.ilks[i].line = next;
             emit NewPalm1("line", i, bytes32(next));
         }
 
         // update joy to help cancel out sin
-        uint mood = vs.joy + earn - over;
+        uint256 mood = vs.joy + earn - over;
         vs.joy = mood;
         emit NewPalm0("joy", bytes32(mood));
     }

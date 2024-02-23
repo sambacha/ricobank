@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.19;
 
-import { Gem } from '../lib/gemfab/src/gem.sol';
-import { Ball } from '../src/ball.sol';
-import { IUniswapV3Factory, IUniswapV3Pool, INonfungiblePositionManager } from './Univ3Interface.sol';
+import {Gem} from "../lib/gemfab/src/gem.sol";
+import {Ball} from "../src/ball.sol";
+import {IUniswapV3Factory, IUniswapV3Pool, INonfungiblePositionManager} from "./Univ3Interface.sol";
 
 struct Asset {
     address token;
@@ -11,57 +11,57 @@ struct Asset {
 }
 
 struct PoolArgs {
-    Asset   a1;
-    Asset   a2;
-    uint24  fee;
+    Asset a1;
+    Asset a2;
+    uint24 fee;
     uint160 sqrtPriceX96;
     uint160 low; // sqrtx96
     uint160 high; // sqrtx96
-    int24   tickSpacing;
+    int24 tickSpacing;
     address recipient;
 }
 
-abstract contract UniSetUp{
-    INonfungiblePositionManager constant nfpm =
-        INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
+abstract contract UniSetUp {
+    INonfungiblePositionManager constant nfpm = INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
 
     // copied from:
     // https://github.com/Uniswap/v3-core/blob/main/contracts/libraries/TickMath.sol
     // SPDX-License-Identifier: GPL-2.0-or-later
     uint160 internal constant MIN_SQRT_RATIO = 4295128739;
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
-    int24   internal constant MIN_TICK       = -887272;
-    int24   internal constant MAX_TICK       = -MIN_TICK;
-    uint160 internal constant X96            = 2 ** 96;
+    int24 internal constant MIN_TICK = -887272;
+    int24 internal constant MAX_TICK = -MIN_TICK;
+    uint160 internal constant X96 = 2 ** 96;
     //////////////////////////////////
 
     address factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-    address router  = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    address router = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
     function getPoolAddr(address token0, address token1, uint24 fee) internal view returns (address pool) {
         pool = IUniswapV3Factory(factory).getPool(token0, token1, fee);
     }
 
     function getArgs(address tok1, uint256 amt1, address tok2, uint256 amt2, uint24 fee, uint160 sqrtPriceX96)
-            internal view returns (PoolArgs memory args) {
+        internal
+        view
+        returns (PoolArgs memory args)
+    {
         Asset memory a1 = Asset(tok1, amt1);
         Asset memory a2 = Asset(tok2, amt2);
         uint160 sqrtSpreadX96 = x96div(x96(101), x96(100));
         uint160 low = x96div(sqrtPriceX96, sqrtSpreadX96);
         uint160 high = x96mul(sqrtPriceX96, sqrtSpreadX96);
-        int24  spacing = IUniswapV3Factory(factory).feeAmountTickSpacing(fee);
+        int24 spacing = IUniswapV3Factory(factory).feeAmountTickSpacing(fee);
         args = PoolArgs(a1, a2, fee, sqrtPriceX96, low, high, spacing, address(this));
     }
 
     // create a new UniV3 pool
     // modified from https://github.com/Uniswap/v3-periphery/blob/main/contracts/base/PoolInitializer.sol
     // GPL2.0-or-later
-    function create_pool(
-        address token0,
-        address token1,
-        uint24  fee,
-        uint160 sqrtPriceX96
-    ) internal returns (address pool) {
+    function create_pool(address token0, address token1, uint24 fee, uint160 sqrtPriceX96)
+        internal
+        returns (address pool)
+    {
         if (token0 > token1) {
             (token0, token1) = (token1, token0);
             sqrtPriceX96 = x96inv(sqrtPriceX96);
@@ -72,7 +72,7 @@ abstract contract UniSetUp{
             pool = IUniswapV3Factory(factory).createPool(token0, token1, fee);
             IUniswapV3Pool(pool).initialize(sqrtPriceX96);
         } else {
-            (uint160 sqrtPriceX96Existing, , , , , ,) = IUniswapV3Pool(pool).slot0();
+            (uint160 sqrtPriceX96Existing,,,,,,) = IUniswapV3Pool(pool).slot0();
             if (sqrtPriceX96Existing == 0) {
                 IUniswapV3Pool(pool).initialize(sqrtPriceX96);
             }
@@ -80,30 +80,25 @@ abstract contract UniSetUp{
     }
 
     // create a new UniV3 pool and add some liquidity
-    function create_and_join_pool(PoolArgs memory args) internal returns (
-        uint256 tokenId,
-        uint128 liquidity,
-        uint256 amount0,
-        uint256 amount1
-    ) {
+    function create_and_join_pool(PoolArgs memory args)
+        internal
+        returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
+    {
         create_pool(args.a1.token, args.a2.token, args.fee, args.sqrtPriceX96);
         return join_pool(args);
     }
 
     // add some liquidity to a UniV3 pool
-    function join_pool(PoolArgs memory args) internal returns (
-        uint256 tokenId,
-        uint128 liquidity,
-        uint256 amount0,
-        uint256 amount1
-    ) {
+    function join_pool(PoolArgs memory args)
+        internal
+        returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
+    {
         require(
-            (args.low > 0 && args.high > 0) || 
-            (0 == args.low && 0 == args.high),
+            (args.low > 0 && args.high > 0) || (0 == args.low && 0 == args.high),
             "low and high must be both 0, or both positive"
         );
 
-        if (args.a1.token > args.a2.token){
+        if (args.a1.token > args.a2.token) {
             Asset memory a;
             a = args.a1;
             args.a1 = args.a2;
@@ -122,13 +117,21 @@ abstract contract UniSetUp{
         int24 tickUpper = getTickAtSqrtRatio(args.high) / spacing * spacing;
         Gem(args.a1.token).approve(address(nfpm), args.a1.amountIn);
         Gem(args.a2.token).approve(address(nfpm), args.a2.amountIn);
-        (tokenId, liquidity, amount0, amount1) = nfpm.mint(INonfungiblePositionManager.MintParams(
-                args.a1.token, args.a2.token,
+        (tokenId, liquidity, amount0, amount1) = nfpm.mint(
+            INonfungiblePositionManager.MintParams(
+                args.a1.token,
+                args.a2.token,
                 args.fee,
-                tickLower, tickUpper,
-                args.a1.amountIn, args.a2.amountIn,
-                0, 0, args.recipient, type(uint).max
-        ));
+                tickLower,
+                tickUpper,
+                args.a1.amountIn,
+                args.a2.amountIn,
+                0,
+                0,
+                args.recipient,
+                type(uint256).max
+            )
+        );
     }
 
     function x96(uint160 x) internal pure returns (uint160) {
@@ -136,7 +139,7 @@ abstract contract UniSetUp{
     }
 
     function x96mul(uint160 x, uint160 y) internal pure returns (uint160) {
-        return uint160(uint(x) * uint(y) / uint(X96));
+        return uint160(uint256(x) * uint256(y) / uint256(X96));
     }
 
     function x96inv(uint160 x) internal pure returns (uint160) {
@@ -144,7 +147,7 @@ abstract contract UniSetUp{
     }
 
     function x96div(uint160 x, uint160 y) internal pure returns (uint160) {
-        return uint160(uint(x) * uint(X96) / uint(y));
+        return uint160(uint256(x) * uint256(X96) / uint256(y));
     }
 
     // getTickAtSqrtRatio
@@ -153,7 +156,7 @@ abstract contract UniSetUp{
     // SPDX-License-Identifier: GPL-2.0-or-later
     function getTickAtSqrtRatio(uint160 sqrtPriceX96) internal pure returns (int24 tick) {
         // second inequality must be < because the price can never reach the price at the max tick
-        require(sqrtPriceX96 >= MIN_SQRT_RATIO && sqrtPriceX96 < MAX_SQRT_RATIO, 'R');
+        require(sqrtPriceX96 >= MIN_SQRT_RATIO && sqrtPriceX96 < MAX_SQRT_RATIO, "R");
         uint256 ratio = uint256(sqrtPriceX96) << 32;
 
         uint256 r = ratio;
@@ -298,7 +301,7 @@ abstract contract UniSetUp{
 
     function getSqrtRatioAtTick(int24 tick) internal pure returns (uint160 sqrtPriceX96) {
         uint256 absTick = tick < 0 ? uint256(-int256(tick)) : uint256(int256(tick));
-        require(absTick <= uint256(uint24(MAX_TICK)), 'T');
+        require(absTick <= uint256(uint24(MAX_TICK)), "T");
 
         uint256 ratio = absTick & 0x1 != 0 ? 0xfffcb933bd6fad37aa2d162d1a594001 : 0x100000000000000000000000000000000;
         if (absTick & 0x2 != 0) ratio = (ratio * 0xfff97272373d413259a46990580e213a) >> 128;
@@ -329,5 +332,4 @@ abstract contract UniSetUp{
         sqrtPriceX96 = uint160((ratio >> 32) + (ratio % (1 << 32) == 0 ? 0 : 1));
     }
     //////////////////////////////////////////
-
 }

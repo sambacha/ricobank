@@ -17,7 +17,7 @@
 
 pragma solidity ^0.8.19;
 
-import { Bank } from "./bank.sol";
+import {Bank} from "./bank.sol";
 
 // price rate controller
 // ensures that market price (mar) roughly tracks par
@@ -26,11 +26,25 @@ import { Bank } from "./bank.sol";
 // if quantity rate is 1%/yr (fee > RAY) but price rate is -2%/yr (way < RAY)
 // borrowers are rewarded about 1%/yr for borrowing and shorting rico
 contract Vox is Bank {
-    function way() external view returns (uint256) {return getVoxStorage().way;}
-    function how() external view returns (uint256) {return getVoxStorage().how;}
-    function tau() external view returns (uint256) {return getVoxStorage().tau;}
-    function cap() external view returns (uint256) {return getVoxStorage().cap;}
-    function tip() external view returns (Rudd memory) {return getVoxStorage().tip;}
+    function way() external view returns (uint256) {
+        return getVoxStorage().way;
+    }
+
+    function how() external view returns (uint256) {
+        return getVoxStorage().how;
+    }
+
+    function tau() external view returns (uint256) {
+        return getVoxStorage().tau;
+    }
+
+    function cap() external view returns (uint256) {
+        return getVoxStorage().cap;
+    }
+
+    function tip() external view returns (Rudd memory) {
+        return getVoxStorage().tip;
+    }
 
     // poke par and way
     function poke() external payable _flog_ {
@@ -38,29 +52,29 @@ contract Vox is Bank {
         VoxStorage storage voxS = getVoxStorage();
 
         // get time diff, update tau
-        uint tau_ = voxS.tau;
+        uint256 tau_ = voxS.tau;
         if (tau_ == block.timestamp) return;
-        uint dt   = block.timestamp - tau_;
-        voxS.tau  = block.timestamp;
+        uint256 dt = block.timestamp - tau_;
+        voxS.tau = block.timestamp;
         emit NewPalm0("tau", bytes32(block.timestamp));
 
         // use previous `way` to grow `par` to keep par updates predictable
-        uint par_ = vatS.par;
-        uint way_ = voxS.way;
-        par_      = grow(par_, way_, dt);
-        vatS.par  = par_;
+        uint256 par_ = vatS.par;
+        uint256 way_ = voxS.way;
+        par_ = grow(par_, way_, dt);
+        vatS.par = par_;
         emit NewPalm0("par", bytes32(par_));
 
         // pull mar
         // forgo way updates if the feed can't be sensed
-        (bytes32 mar, uint ttl) = getBankStorage().fb.pull(voxS.tip.src, voxS.tip.tag);
-        if (block.timestamp > ttl) { return; }
+        (bytes32 mar, uint256 ttl) = getBankStorage().fb.pull(voxS.tip.src, voxS.tip.tag);
+        if (block.timestamp > ttl) return;
 
         // raise the price rate (way) when mar < par, lower when mar > par
         // this is how mar tracks par
-        if (uint(mar) < par_) {
+        if (uint256(mar) < par_) {
             way_ = min(voxS.cap, grow(way_, voxS.how, dt));
-        } else if (uint(mar) > par_) {
+        } else if (uint256(mar) > par_) {
             way_ = max(rinv(voxS.cap), grow(way_, rinv(voxS.how), dt));
         }
         voxS.way = way_;
