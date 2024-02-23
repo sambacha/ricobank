@@ -24,3 +24,6 @@
 	path = lib/solidstate-solidity
 	url = https://github.com/solidstate-network/solidstate-solidity
 	branch = v0.0.59
+[submodule "lib/v3-core"]
+	path = lib/v3-core
+	url = https://github.com/Uniswap/v3-core
