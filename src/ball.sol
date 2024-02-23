@@ -9,7 +9,7 @@
 
 pragma solidity ^0.8.19;
 
-import {Diamond} from "../lib/solidstate-solidity/contracts/proxy/diamond/SolidStateDiamond.sol";
+import {SolidStateDiamond} from "../lib/solidstate-solidity/contracts/proxy/diamond/SolidStateDiamond.sol";
 
 import { DiamondWritable } from "../lib/solidstate-solidity/contracts/proxy/diamond/writable/DiamondWritable.sol";
 import { IERC2535DiamondCutInternal } from "../lib/solidstate-solidity/contracts/interfaces/IERC2535DiamondCutInternal.sol";
@@ -187,8 +187,8 @@ contract Ball is Math, Ward {
         facetCuts[1] = IERC2535DiamondCutInternal.FacetCut(address(vat),  ADD, vatsels);
         facetCuts[2] = IERC2535DiamondCutInternal.FacetCut(address(vow),  ADD, vowsels);
         facetCuts[3] = IERC2535DiamondCutInternal.FacetCut(address(vox),  ADD, voxsels);
-        Diamond(payable(address(fbank))).acceptOwnership();
-        Diamond(payable(address(fbank))).diamondCut(facetCuts, address(0), bytes(""));
+        SolidStateDiamond(payable(address(fbank))).acceptOwnership();
+        SolidStateDiamond(payable(address(fbank))).diamondCut(facetCuts, address(0), bytes(""));
 
         fbank.file("rico", bytes32(bytes20(rico)));
         fbank.file("risk", bytes32(bytes20(risk)));
@@ -310,7 +310,7 @@ contract Ball is Math, Ward {
         uniadapt.give(usr);
         cladapt.give(usr);
 
-        Diamond(bank).transferOwnership(usr);
+        SolidStateDiamond(bank).transferOwnership(usr);
     }
 
     function _configureBlock(Block b, bytes32 tag, address s1, bytes32 t1, address s2, bytes32 t2, uint C) internal {

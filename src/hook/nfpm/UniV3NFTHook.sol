@@ -7,7 +7,7 @@ pragma solidity ^0.8.19;
 import { Gem, Feedbase } from "../../bank.sol";
 import { HookMix } from "../hook.sol";
 
-import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import { IUniswapV3Pool } from "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import { INonfungiblePositionManager as INFPM } from "./interfaces/INonfungiblePositionManager.sol";
 
 // uniswap libraries to get total token amounts in uniswap positions
