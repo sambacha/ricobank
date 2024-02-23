@@ -3,14 +3,17 @@
 // Copyright (C) 2021 the bank
 
 pragma solidity ^0.8.19;
-import 'forge-std/Test.sol';
 
-import { Vat, Math, Gem, ERC20Hook } from './RicoHelper.sol';
+import "forge-std/Test.sol";
+
+import {Vat, Math, Gem, ERC20Hook} from "./RicoHelper.sol";
 
 contract Flasher is Math {
-    Gem     rico;
+    Gem rico;
     bytes32 ilk0;
-    error   ErrBroken();
+
+    error ErrBroken();
+
     address payable bank;
 
     constructor(address payable _bank, address rico_, bytes32 ilk0_) {
@@ -39,7 +42,9 @@ contract Flasher is Math {
         }
     }
 
-    function failure() public pure { revert ErrBroken(); }
+    function failure() public pure {
+        revert ErrBroken();
+    }
 
     function reenter(address gem, uint256 wad) public {
         bytes memory data = abi.encodeCall(this.approve_hook, (gem, wad));
@@ -53,18 +58,18 @@ contract Flasher is Math {
 
     // trade some flashed rico for gem, then use gem as collateral to pay flash back
     function rico_lever(address gem, uint256 lock_amt, uint256 draw_amt) public {
-        require(Vat(bank).ilks(ilk0).rack == RAY, 'rico_lever: rack must be 1');
+        require(Vat(bank).ilks(ilk0).rack == RAY, "rico_lever: rack must be 1");
         // use the flashed rico to buy some gem
         _buy_gem(gem, draw_amt);
         approve_hook(gem, lock_amt);
 
         // frob to compensate for what was lost
-        Vat(bank).frob(ilk0, address(this), abi.encodePacked(lock_amt), int(draw_amt));
+        Vat(bank).frob(ilk0, address(this), abi.encodePacked(lock_amt), int256(draw_amt));
     }
 
     // use the flashed rico to pay down a loan, sell some collateral to pay flash back
     function rico_release(address gem, uint256 free_amt, uint256 wipe_amt) public {
-        Vat(bank).frob(ilk0, address(this), abi.encodePacked(-int(free_amt)), -int(wipe_amt));
+        Vat(bank).frob(ilk0, address(this), abi.encodePacked(-int256(free_amt)), -int256(wipe_amt));
         _sell_gem(gem, wipe_amt);
     }
 

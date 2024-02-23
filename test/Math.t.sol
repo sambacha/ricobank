@@ -3,11 +3,12 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 
-import { Math } from "../src/mixin/math.sol";
+import {Math} from "../src/mixin/math.sol";
 
 contract MathTest is Test, Math {
-    uint foo;
-    int bar;
+    uint256 foo;
+    int256 bar;
+
     function setUp() public {}
 
     function test_add() public {
@@ -17,9 +18,9 @@ contract MathTest is Test, Math {
         assertEq(add(0, 1), 1);
         assertEq(add(1, 0), 1);
 
-        assertEq(add(type(uint).max - 1, 1), type(uint).max);
+        assertEq(add(type(uint256).max - 1, 1), type(uint256).max);
         vm.expectRevert(Math.ErrUintOver.selector);
-        foo = add(type(uint).max, 1);
+        foo = add(type(uint256).max, 1);
         assertEq(add(1, -1), 0);
         vm.expectRevert(Math.ErrUintUnder.selector);
         foo = add(0, -1);
@@ -34,24 +35,24 @@ contract MathTest is Test, Math {
 
         // overflow all the way back to same sign and greater magnitude should revert
         vm.expectRevert(Math.ErrIntOver.selector);
-        bar = mul(uint(5), type(int).max / 2);
+        bar = mul(uint256(5), type(int256).max / 2);
         vm.expectRevert(Math.ErrIntUnder.selector);
-        bar = mul(uint(5), -type(int).max / 2);
+        bar = mul(uint256(5), -type(int256).max / 2);
 
-        assertEq(mul(uint(type(int).max) - 1, 1), type(int).max - 1);
+        assertEq(mul(uint256(type(int256).max) - 1, 1), type(int256).max - 1);
         vm.expectRevert(Math.ErrIntOver.selector);
-        bar = mul(uint(type(int).max) + 1, 1);
+        bar = mul(uint256(type(int256).max) + 1, 1);
         vm.expectRevert(Math.ErrIntOver.selector);
-        bar = mul(uint(type(int).max) + 1, 2);
+        bar = mul(uint256(type(int256).max) + 1, 2);
 
-        assertEq(mul(uint(type(int).max), 1), type(int).max);
+        assertEq(mul(uint256(type(int256).max), 1), type(int256).max);
         vm.expectRevert(Math.ErrIntOver.selector);
-        bar = mul(uint(type(int).max), 2);
+        bar = mul(uint256(type(int256).max), 2);
         vm.expectRevert(Math.ErrIntOver.selector);
-        bar = mul(uint(type(int).max / 2 + 1), 2);
+        bar = mul(uint256(type(int256).max / 2 + 1), 2);
         vm.expectRevert(Math.ErrUintUnder.selector);
-        bar = mul(uint(type(int).max), -1);
-        assertEq(mul(uint(type(int).max - 1), -1), type(int).min);
+        bar = mul(uint256(type(int256).max), -1);
+        assertEq(mul(uint256(type(int256).max - 1), -1), type(int256).min);
     }
 
     function test_wmul() public {
@@ -101,55 +102,40 @@ contract MathTest is Test, Math {
     }
 
     function test_concat() public {
-        assertEq(concat('hello ', 'world'), 'hello world');
-        assertEq(concat('hello', ''), 'hello');
-        assertEq(concat('', 'world'), 'world');
-        assertEq(concat('', ''), '');
+        assertEq(concat("hello ", "world"), "hello world");
+        assertEq(concat("hello", ""), "hello");
+        assertEq(concat("", "world"), "world");
+        assertEq(concat("", ""), "");
     }
 
     function test_concat_big_first() public {
         // test for off-by-one errors at the start
-        bytes32 big_s = '1234567890123456789012345678901';
-        assertEq(bytes31(concat(big_s, 'i')), bytes31(big_s));
+        bytes32 big_s = "1234567890123456789012345678901";
+        assertEq(bytes31(concat(big_s, "i")), bytes31(big_s));
 
-        assertEq(big_s, concat(big_s, ''));
-        assertEq(
-            concat(big_s, bytes32(bytes1(0x11))),
-            concat(big_s, bytes32(bytes2(0x1122)))
-        );
-        assertEq(
-            concat(big_s, bytes32(bytes1(0x11))),
-            concat(big_s, bytes32(bytes2(0x1100)))
-        );
-        assertEq(
-            concat(big_s, 'i'),
-            concat(big_s, 'ii')
-        );
-        assertEq(
-            bytes1(bytes32(uint(concat(big_s, 'i')) << (31 * 8))),
-            bytes1('i')
-        );
+        assertEq(big_s, concat(big_s, ""));
+        assertEq(concat(big_s, bytes32(bytes1(0x11))), concat(big_s, bytes32(bytes2(0x1122))));
+        assertEq(concat(big_s, bytes32(bytes1(0x11))), concat(big_s, bytes32(bytes2(0x1100))));
+        assertEq(concat(big_s, "i"), concat(big_s, "ii"));
+        assertEq(bytes1(bytes32(uint256(concat(big_s, "i")) << (31 * 8))), bytes1("i"));
 
         // yes should get cut
-        bytes32 bigger_s = concat(big_s, 'i');
-        bytes32 bigger_s_yes = concat(bigger_s, 'yes');
+        bytes32 bigger_s = concat(big_s, "i");
+        bytes32 bigger_s_yes = concat(bigger_s, "yes");
         assertEq(bigger_s_yes, bigger_s);
     }
 
     function test_concat_big_second() public {
         // test for off-by-one errors at the end
-        bytes32 big_s = '1234567890123456789012345678901';
-        assertEq(big_s, concat('', big_s));
+        bytes32 big_s = "1234567890123456789012345678901";
+        assertEq(big_s, concat("", big_s));
         assertEq(bytes1(concat(bytes32(bytes1(0x11)), big_s)), bytes1(0x11));
-        assertEq(bytes32(uint(concat(bytes32(bytes1(0x11)), big_s)) << 8), big_s);
+        assertEq(bytes32(uint256(concat(bytes32(bytes1(0x11)), big_s)) << 8), big_s);
 
         // bigger_s should get cut
-        bytes32 bigger_s     = concat(big_s, 'i');
-        bytes32 bigger_s_yes = concat('yes', bigger_s);
-        assertEq(
-            bytes32(uint(bigger_s_yes) << (3 << 3)),
-            bytes32(uint(bigger_s) >> (3 << 3) << (3 << 3))
-        );
+        bytes32 bigger_s = concat(big_s, "i");
+        bytes32 bigger_s_yes = concat("yes", bigger_s);
+        assertEq(bytes32(uint256(bigger_s_yes) << (3 << 3)), bytes32(uint256(bigger_s) >> (3 << 3) << (3 << 3)));
     }
 
     function test_rmash() public {
@@ -161,11 +147,11 @@ contract MathTest is Test, Math {
         assertEq(rmash(RAY / 2, 1, RAY / 2, 0), RAY / 4);
 
         // deal == 0
-        assertEq(rmash(0, 1, RAY / 2, int(RAY)), RAY);
-        assertEq(rmash(0, 1, RAY / 2, int(RAY / 2)), RAY / 2);
-        assertEq(rmash(0, 1, RAY, -int(RAY / 4)), 0);
-        assertEq(rmash(0, 1, 2 * RAY, -int(RAY)), 0);
+        assertEq(rmash(0, 1, RAY / 2, int256(RAY)), RAY);
+        assertEq(rmash(0, 1, RAY / 2, int256(RAY / 2)), RAY / 2);
+        assertEq(rmash(0, 1, RAY, -int256(RAY / 4)), 0);
+        assertEq(rmash(0, 1, 2 * RAY, -int256(RAY)), 0);
 
-        assertEq(rmash(RAY * 3 / 4, 2, 4 * RAY, -int(RAY)), RAY * 9 / 16 * 4 - RAY);
+        assertEq(rmash(RAY * 3 / 4, 2, 4 * RAY, -int256(RAY)), RAY * 9 / 16 * 4 - RAY);
     }
 }

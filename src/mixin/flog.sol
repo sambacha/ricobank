@@ -5,15 +5,11 @@
 pragma solidity ^0.8.19;
 
 abstract contract Flog {
-    event NewFlog(
-        address indexed caller
-      , bytes4 indexed sig
-      , bytes data
-    );
+    event NewFlog(address indexed caller, bytes4 indexed sig, bytes data);
 
     // similar to ds-note - emits function call data
     // use at beginning of external state modifying functions
-    modifier _flog_ {
+    modifier _flog_() {
         emit NewFlog(msg.sender, msg.sig, msg.data);
         _;
     }

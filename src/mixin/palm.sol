@@ -5,25 +5,8 @@
 pragma solidity ^0.8.19;
 
 abstract contract Palm {
-    event NewPalm0(
-        bytes32 indexed key
-      , bytes32 val
-    );
-    event NewPalm1(
-        bytes32 indexed key
-      , bytes32 indexed idx0
-      , bytes32 val
-    );
-    event NewPalm2(
-        bytes32 indexed key
-      , bytes32 indexed idx0
-      , bytes32 indexed idx1
-      , bytes32 val
-    );
-    event NewPalmBytes2(
-        bytes32 indexed key
-      , bytes32 indexed idx0
-      , bytes32 indexed idx1
-      , bytes val
-    );
+    event NewPalm0(bytes32 indexed key, bytes32 val);
+    event NewPalm1(bytes32 indexed key, bytes32 indexed idx0, bytes32 val);
+    event NewPalm2(bytes32 indexed key, bytes32 indexed idx0, bytes32 indexed idx1, bytes32 val);
+    event NewPalmBytes2(bytes32 indexed key, bytes32 indexed idx0, bytes32 indexed idx1, bytes val);
 }
