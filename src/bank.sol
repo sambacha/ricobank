@@ -4,8 +4,8 @@
 
 pragma solidity ^0.8.19;
 
-import { AccessControlInternal } from "../lib/solidstate-solidity/contracts/access/AccessControlInternal.sol";
-import { AccessControlStorage } from "../lib/solidstate-solidity/contracts/access/AccessControlStorage.sol";
+import { AccessControlInternal } from "../lib/solidstate-solidity/contracts/access/access_control/AccessControlInternal.sol";
+import { AccessControlStorage } from "../lib/solidstate-solidity/contracts/access/access_control/AccessControlStorage.sol";
 
 import { Math } from "./mixin/math.sol";
 import { Flog } from "./mixin/flog.sol";
