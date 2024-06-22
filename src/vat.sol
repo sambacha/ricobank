@@ -22,6 +22,8 @@ pragma solidity ^0.8.19;
 
 import {Bank} from "./bank.sol";
 import {Hook} from "./hook/hook.sol";
+import "lib/solidstate-solidity/contracts/access/ownable/Ownable.sol";
+import "lib/solidstate-solidity/contracts/access/ownable/IOwnable.sol";
 
 contract Vat is Bank {
     function ilks(bytes32 i) external view returns (Ilk memory) {
@@ -98,7 +100,7 @@ contract Vat is Bank {
         vs.lock = UNLOCKED;
     }
 
-    function init(bytes32 ilk, address hook) external payable onlyOwner _flog_ {
+    function init(bytes32 ilk, address hook) public onlyRole _flog_ {
         VatStorage storage vs = getVatStorage();
         if (vs.ilks[ilk].rack != 0) revert ErrMultiIlk();
         vs.ilks[ilk] = Ilk({rack: RAY, fee: RAY, hook: hook, rho: block.timestamp, tart: 0, chop: 0, line: 0, dust: 0});
@@ -300,7 +302,7 @@ contract Vat is Bank {
         vs.flock = UNLOCKED;
     }
 
-    function filk(bytes32 ilk, bytes32 key, bytes32 val) external payable onlyOwner _flog_ {
+    function filk(bytes32 ilk, bytes32 key, bytes32 val) external payable onlyRole _flog_ {
         uint256 _val = uint256(val);
         VatStorage storage vs = getVatStorage();
         Ilk storage i = vs.ilks[ilk];
@@ -350,7 +352,7 @@ contract Vat is Bank {
         return _hookcall(i, indata);
     }
 
-    function filh(bytes32 ilk, bytes32 key, bytes32[] calldata xs, bytes32 val) external payable onlyOwner _flog_ {
+    function filh(bytes32 ilk, bytes32 key, bytes32[] calldata xs, bytes32 val) external payable onlyRole _flog_ {
         _hookcall(ilk, abi.encodeWithSignature("file(bytes32,bytes32,bytes32[],bytes32)", key, ilk, xs, val));
     }
 

@@ -20,7 +20,7 @@ contract File is Bank {
         return _REL_MAX;
     }
 
-    function file(bytes32 key, bytes32 val) external payable onlyOwner _flog_ {
+    function file(bytes32 key, bytes32 val) external payable onlyRole _flog_ {
         VatStorage storage vatS = getVatStorage();
         VowStorage storage vowS = getVowStorage();
         VoxStorage storage voxS = getVoxStorage();

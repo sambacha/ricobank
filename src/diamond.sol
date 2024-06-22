@@ -2,8 +2,8 @@
 
 // Copyright (C) 2021-2024 halys
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
-import {SolidStateDiamond} from "../lib/solidstate-solidity/contracts/proxy/diamond/SolidStateDiamond.sol";
+import {SolidStateDiamond} from "lib/solidstate-solidity/contracts/proxy/diamond/SolidStateDiamond.sol";
 
 contract BankDiamond is SolidStateDiamond {}

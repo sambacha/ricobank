@@ -1,0 +1,33 @@
+[profile.default]
+src = 'src'
+out = 'artifacts'
+fs_permissions = [{access = 'read', path = './lib/feedbase'},
+                  {access = 'read', path = './test/invariant'},
+                  {access = 'read', path = './node_modules/@uniswap'}]
+libs = [
+    'lib',
+    'node_modules',
+]
+remappings = [
+    'feedbase/=lib/feedbase/src/',
+    'gemfab/=lib/gemfab/src',
+    'hardhat/=node_modules/hardhat/',
+    "solidstate-solidity/=lib/solidstate-solidity/contracts/",
+]
+optimizer=true
+optimizer-runs=10000
+solc_version='0.8.19'
+
+[invariant]
+fail_on_revert = false
+runs = 1
+depth = 10000
+
+[profile.disallow_reverts.invariant]
+fail_on_revert = true
+
+[profile.lite.optimizer_details.yulDetails]
+stackAllocation = true
+optimizerSteps = ''
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
