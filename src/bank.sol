@@ -44,7 +44,6 @@ abstract contract Bank is Math, Flog, Palm, OwnableInternal {
         uint256 ceil;  // [wad] Total Debt Ceiling
         uint256 par;   // [ray] System Price (rico/ref)
         uint256 lock;  // lock
-        uint256 flock; // flash lock
     }
 
     uint256 internal constant UNLOCKED = 2;
@@ -52,7 +51,7 @@ abstract contract Bank is Math, Flog, Palm, OwnableInternal {
 
     // RISK mint rate. Used in struct, never extend in upgrade
     struct Ramp {
-        uint256 bel; // [sec] last flop timestamp
+        uint256 bel; // [sec] last flxp timestamp
         uint256 cel; // [sec] max seconds flop can ramp up
         uint256 rel; // [ray] fraction of RISK supply/s
         uint256 wel; // [ray] fraction of joy/flap
@@ -72,10 +71,9 @@ abstract contract Bank is Math, Flog, Palm, OwnableInternal {
     struct VowStorage {
         Gem     risk;
         Ramp    ramp;
-        uint256 loot;
-        Plx     plat; // flap plot
-        Plx     plot; // flop plot
-        Rudd    rudd; // risk:rico feed
+        uint256 loot; // [ray] portion of flap taken by user (vs protocol)
+        uint256 dam;  // [ray] per-second flap discount
+        uint256 dom;  // [ray] per-second flop discount
     }
 
     struct VoxStorage {
@@ -110,6 +108,7 @@ abstract contract Bank is Math, Flog, Palm, OwnableInternal {
     error ErrWrongKey();
     error ErrWrongUrn();
     error ErrBound();
+    error ErrLock();
 
     // bubble up error code from a reverted call
     function bubble(bytes memory data) internal pure {
@@ -126,4 +125,16 @@ abstract contract Bank is Math, Flog, Palm, OwnableInternal {
     function must(uint actual, uint lo, uint hi) internal pure {
         if (actual < lo || actual > hi) revert ErrBound();
     }
+
+    // lock for CDP manipulation functions
+    // not necessary for drip, because frob and bail drip
+    // uses VatStorage from previous iteration.  move to BS in future
+    modifier _lock_ {
+        VatStorage storage vs = getVatStorage();
+        if (vs.lock == LOCKED) revert ErrLock();
+        vs.lock = LOCKED;
+        _;
+        vs.lock = UNLOCKED;
+    }
+
 }

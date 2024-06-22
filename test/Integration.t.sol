@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 
-import { Flasher } from "./Flasher.sol";
 import {
     RicoSetUp, Guy, BankDiamond, Bank, File, Vat, Vow, Hook, Gem, Ball
 } from "./RicoHelper.sol";
@@ -25,6 +24,7 @@ contract IntegrationTest is Test, RicoSetUp {
         check_integrity();
 
         // system is in surplus, flap
+        set_dxm('dam', RAY);
         Vow(bank).keep(single(gilk));
         check_integrity();
 
@@ -35,6 +35,7 @@ contract IntegrationTest is Test, RicoSetUp {
         check_integrity();
 
         // system is in deficit, flop
+        set_dxm('dom', RAY);
         Vow(bank).keep(single(gilk));
         check_integrity();
     }
@@ -71,6 +72,7 @@ contract IntegrationTest is Test, RicoSetUp {
         uint joy0 = Vat(bank).joy();
 
         // joy should decrease, because it's being flapped
+        set_dxm('dam', RAY);
         Vow(bank).keep(single(gilk));
 
         uint rico_sup1 = rico.totalSupply();
@@ -94,6 +96,7 @@ contract IntegrationTest is Test, RicoSetUp {
         uint joy0 = Vat(bank).joy();
 
         // joy should increase, because keeper is paying rico for risk
+        set_dxm('dom', RAY);
         Vow(bank).keep(single(gilk));
 
         uint rico_sup1 = rico.totalSupply();
