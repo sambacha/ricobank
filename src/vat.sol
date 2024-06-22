@@ -20,33 +20,63 @@
 
 pragma solidity ^0.8.19;
 
-import { Bank } from "./bank.sol";
-import { Hook } from "./hook/hook.sol";
+import {Bank} from "./bank.sol";
+import {Hook} from "./hook/hook.sol";
+import "lib/solidstate-solidity/contracts/access/ownable/Ownable.sol";
+import "lib/solidstate-solidity/contracts/access/ownable/IOwnable.sol";
 
 contract Vat is Bank {
     function ilks(bytes32 i) external view returns (Ilk memory) {
         return getVatStorage().ilks[i];
     }
-    function urns(bytes32 i, address u) external view returns (uint) {
+
+    function urns(bytes32 i, address u) external view returns (uint256) {
         return getVatStorage().urns[i][u];
     }
-    function joy()  external view returns (uint) {return getVatStorage().joy;}
-    function sin()  external view returns (uint) {return getVatStorage().sin;}
-    function rest() external view returns (uint) {return getVatStorage().rest;}
-    function debt() external view returns (uint) {return getVatStorage().debt;}
-    function ceil() external view returns (uint) {return getVatStorage().ceil;}
-    function par()  external view returns (uint) {return getVatStorage().par;}
-    function ink(bytes32 i, address u) external view returns (bytes memory) {
-        return abi.decode(_hookview(i, abi.encodeWithSelector(
-            Hook.ink.selector, i, u
-        )), (bytes));
+
+    function joy() external view returns (uint256) {
+        return getVatStorage().joy;
     }
-    function MINT() external pure returns (uint) {return _MINT;}
-    function FEE_MAX() external pure returns (uint) {return _FEE_MAX;}
 
-    enum Spot {Sunk, Iffy, Safe}
+    function sin() external view returns (uint256) {
+        return getVatStorage().sin;
+    }
 
-    uint256 constant _MINT    = 2 ** 128;
+    function rest() external view returns (uint256) {
+        return getVatStorage().rest;
+    }
+
+    function debt() external view returns (uint256) {
+        return getVatStorage().debt;
+    }
+
+    function ceil() external view returns (uint256) {
+        return getVatStorage().ceil;
+    }
+
+    function par() external view returns (uint256) {
+        return getVatStorage().par;
+    }
+
+    function ink(bytes32 i, address u) external view returns (bytes memory) {
+        return abi.decode(_hookview(i, abi.encodeWithSelector(Hook.ink.selector, i, u)), (bytes));
+    }
+
+    function MINT() external pure returns (uint256) {
+        return _MINT;
+    }
+
+    function FEE_MAX() external pure returns (uint256) {
+        return _FEE_MAX;
+    }
+
+    enum Spot {
+        Sunk,
+        Iffy,
+        Safe
+    }
+
+    uint256 constant _MINT = 2 ** 128;
     uint256 constant _FEE_MAX = 1000000072964521287979890107; // ~10x/yr
 
     error ErrIlkInit();
@@ -62,7 +92,7 @@ contract Vat is Bank {
 
     // lock for CDP manipulation functions
     // not necessary for drip, because frob and bail drip
-    modifier _lock_ {
+    modifier _lock_() {
         VatStorage storage vs = getVatStorage();
         if (vs.lock == LOCKED) revert ErrLock();
         vs.lock = LOCKED;
@@ -70,41 +100,28 @@ contract Vat is Bank {
         vs.lock = UNLOCKED;
     }
 
-    function init(bytes32 ilk, address hook)
-      external payable onlyOwner _flog_
-    {
+    function init(bytes32 ilk, address hook) public onlyRole _flog_ {
         VatStorage storage vs = getVatStorage();
         if (vs.ilks[ilk].rack != 0) revert ErrMultiIlk();
-        vs.ilks[ilk] = Ilk({
-            rack: RAY,
-            fee : RAY,
-            hook: hook,
-            rho : block.timestamp,
-            tart: 0,
-            chop: 0, line: 0, dust: 0
-        });
+        vs.ilks[ilk] = Ilk({rack: RAY, fee: RAY, hook: hook, rho: block.timestamp, tart: 0, chop: 0, line: 0, dust: 0});
         emit NewPalm1("rack", ilk, bytes32(RAY));
-        emit NewPalm1("fee",  ilk, bytes32(RAY));
+        emit NewPalm1("fee", ilk, bytes32(RAY));
         emit NewPalm1("hook", ilk, bytes32(bytes20(hook)));
-        emit NewPalm1("rho",  ilk, bytes32(block.timestamp));
-        emit NewPalm1("tart", ilk, bytes32(uint(0)));
-        emit NewPalm1("chop", ilk, bytes32(uint(0)));
-        emit NewPalm1("line", ilk, bytes32(uint(0)));
-        emit NewPalm1("dust", ilk, bytes32(uint(0)));
+        emit NewPalm1("rho", ilk, bytes32(block.timestamp));
+        emit NewPalm1("tart", ilk, bytes32(uint256(0)));
+        emit NewPalm1("chop", ilk, bytes32(uint256(0)));
+        emit NewPalm1("line", ilk, bytes32(uint256(0)));
+        emit NewPalm1("dust", ilk, bytes32(uint256(0)));
     }
 
-    function safe(bytes32 i, address u)
-      public view returns (Spot, uint, uint)
-    {
+    function safe(bytes32 i, address u) public view returns (Spot, uint256, uint256) {
         VatStorage storage vs = getVatStorage();
         Ilk storage ilk = vs.ilks[i];
-        bytes memory data = _hookview(i, abi.encodeWithSelector(
-            Hook.safehook.selector, i, u
-        ));
+        bytes memory data = _hookview(i, abi.encodeWithSelector(Hook.safehook.selector, i, u));
         if (data.length != 96) revert ErrHookData();
- 
-        (uint tot, uint cut, uint ttl) = abi.decode(data, (uint, uint, uint));
-        uint art = vs.urns[i][u];
+
+        (uint256 tot, uint256 cut, uint256 ttl) = abi.decode(data, (uint256, uint256, uint256));
+        uint256 art = vs.urns[i][u];
         if (art == 0) return (Spot.Safe, RAY, tot);
         if (block.timestamp > ttl) return (Spot.Iffy, 0, tot);
 
@@ -123,44 +140,42 @@ contract Vat is Bank {
     // modify CDP
     // locked with bail to make individual urn manipulations atomic
     // e.g. avoid making the urn safe in the middle of an unsafe borrow
-    function frob(bytes32 i, address u, bytes calldata dink, int dart)
-      external payable _flog_ _lock_
-    {
+    function frob(bytes32 i, address u, bytes calldata dink, int256 dart) external payable _flog_ _lock_ {
         VatStorage storage vs = getVatStorage();
         Ilk storage ilk = vs.ilks[i];
 
-        uint rack = _drip(i);
+        uint256 rack = _drip(i);
 
         // modify normalized debt
-        uint256 art   = add(vs.urns[i][u], dart);
+        uint256 art = add(vs.urns[i][u], dart);
         vs.urns[i][u] = art;
         emit NewPalm2("art", i, bytes32(bytes20(u)), bytes32(art));
 
         // keep track of total so it denorm doesn't exceed line
-        ilk.tart      = add(ilk.tart, dart);
+        ilk.tart = add(ilk.tart, dart);
         emit NewPalm1("tart", i, bytes32(ilk.tart));
 
-        uint _debt;
-        uint _rest;
+        uint256 _debt;
+        uint256 _rest;
         {
             // rico mint/burn amount increases with rack
-            int dtab = mul(rack, dart);
+            int256 dtab = mul(rack, dart);
             if (dtab > 0) {
                 // borrow
                 // dtab is a rad, debt is a wad
-                uint wad = uint(dtab) / RAY;
-                _debt    = vs.debt += wad;
+                uint256 wad = uint256(dtab) / RAY;
+                _debt = vs.debt += wad;
                 emit NewPalm0("debt", bytes32(_debt));
 
                 // remainder is a ray
-                _rest = vs.rest += uint(dtab) % RAY;
+                _rest = vs.rest += uint256(dtab) % RAY;
                 emit NewPalm0("rest", bytes32(_rest));
 
                 getBankStorage().rico.mint(msg.sender, wad);
             } else if (dtab < 0) {
                 // paydown
                 // dtab is a rad, so burn one extra to round in system's favor
-                uint wad = (uint(-dtab) / RAY) + 1;
+                uint256 wad = (uint256(-dtab) / RAY) + 1;
                 _debt = vs.debt -= wad;
                 emit NewPalm0("debt", bytes32(_debt));
 
@@ -174,9 +189,7 @@ contract Vat is Bank {
 
         // safer if less/same art and more/same ink
         Hook.FHParams memory p = Hook.FHParams(msg.sender, i, u, dink, dart);
-        bytes memory data      = _hookcall(
-            i, abi.encodeWithSelector(Hook.frobhook.selector, p)
-        );
+        bytes memory data = _hookcall(i, abi.encodeWithSelector(Hook.frobhook.selector, p));
         if (data.length != 32) revert ErrHookData();
 
         // urn is safer, or it is safe
@@ -198,11 +211,10 @@ contract Vat is Bank {
     // liquidate CDP
     // locked with frob to make individual urn manipulations atomic
     // e.g. avoid making the urn safe in the middle of a liquidation
-    function bail(bytes32 i, address u)
-      external payable _flog_ _lock_ returns (bytes memory)
-    {
-        uint rack = _drip(i);
-        uint deal; uint tot;
+    function bail(bytes32 i, address u) external payable _flog_ _lock_ returns (bytes memory) {
+        uint256 rack = _drip(i);
+        uint256 deal;
+        uint256 tot;
         {
             Spot spot;
             (spot, deal, tot) = safe(i, u);
@@ -211,14 +223,14 @@ contract Vat is Bank {
         VatStorage storage vs = getVatStorage();
         Ilk storage ilk = vs.ilks[i];
 
-        uint art = vs.urns[i][u];
+        uint256 art = vs.urns[i][u];
         delete vs.urns[i][u];
-        emit NewPalm2("art", i, bytes32(bytes20(u)), bytes32(uint(0)));
+        emit NewPalm2("art", i, bytes32(bytes20(u)), bytes32(uint256(0)));
 
         // bill is the debt hook will attempt to cover when auctioning ink
-        uint dtab = art * rack;
-        uint owed = dtab / RAY;
-        uint bill = rmul(ilk.chop, owed);
+        uint256 dtab = art * rack;
+        uint256 owed = dtab / RAY;
+        uint256 bill = rmul(ilk.chop, owed);
 
         ilk.tart -= art;
         emit NewPalm1("tart", i, bytes32(ilk.tart));
@@ -228,24 +240,22 @@ contract Vat is Bank {
         emit NewPalm0("sin", bytes32(vs.sin));
 
         // ink auction
-        Hook.BHParams memory p = Hook.BHParams(
-            i, u, bill, owed, msg.sender, deal, tot
-        );
-        return abi.decode(_hookcall(
-            i, abi.encodeWithSelector(Hook.bailhook.selector, p)
-        ), (bytes));
+        Hook.BHParams memory p = Hook.BHParams(i, u, bill, owed, msg.sender, deal, tot);
+        return abi.decode(_hookcall(i, abi.encodeWithSelector(Hook.bailhook.selector, p)), (bytes));
     }
 
-    function drip(bytes32 i) external payable _flog_ { _drip(i); }
+    function drip(bytes32 i) external payable _flog_ {
+        _drip(i);
+    }
 
     // drip without flog
-    function _drip(bytes32 i) internal returns (uint rack) {
+    function _drip(bytes32 i) internal returns (uint256 rack) {
         VatStorage storage vs = getVatStorage();
-        Ilk storage ilk       = vs.ilks[i];
+        Ilk storage ilk = vs.ilks[i];
         // multiply rack by fee every second
-        uint prev = ilk.rack;
+        uint256 prev = ilk.rack;
         if (prev == 0) revert ErrIlkInit();
- 
+
         if (block.timestamp == ilk.rho) {
             return ilk.rack;
         }
@@ -255,30 +265,29 @@ contract Vat is Bank {
 
         // difference between current and previous rack determines interest
         uint256 delt = rack - prev;
-        uint256 rad  = ilk.tart * delt;
-        uint256 all  = vs.rest + rad;
+        uint256 rad = ilk.tart * delt;
+        uint256 all = vs.rest + rad;
 
-        ilk.rho      = block.timestamp;
+        ilk.rho = block.timestamp;
         emit NewPalm1("rho", i, bytes32(block.timestamp));
 
-        ilk.rack     = rack;
+        ilk.rack = rack;
         emit NewPalm1("rack", i, bytes32(rack));
 
-        vs.debt      = vs.debt + (all / RAY);
+        vs.debt = vs.debt + (all / RAY);
         emit NewPalm0("debt", bytes32(vs.debt));
 
         // tart * rack is a rad, interest is a wad, rest is the change
-        vs.rest      = all % RAY;
+        vs.rest = all % RAY;
         emit NewPalm0("rest", bytes32(vs.rest));
 
-        vs.joy       = vs.joy + (all / RAY);
+        vs.joy = vs.joy + (all / RAY);
         emit NewPalm0("joy", bytes32(vs.joy));
     }
 
     // flash borrow
     // locked with itself to avoid flashing more than MINT
-    function flash(address code, bytes calldata data)
-      external payable returns (bytes memory result) {
+    function flash(address code, bytes calldata data) external payable returns (bytes memory result) {
         // lock->mint->call->burn->unlock
         VatStorage storage vs = getVatStorage();
         if (vs.flock == LOCKED) revert ErrLock();
@@ -293,15 +302,16 @@ contract Vat is Bank {
         vs.flock = UNLOCKED;
     }
 
-    function filk(bytes32 ilk, bytes32 key, bytes32 val)
-      external payable onlyOwner _flog_
-    {
-        uint _val = uint(val);
+    function filk(bytes32 ilk, bytes32 key, bytes32 val) external payable onlyRole _flog_ {
+        uint256 _val = uint256(val);
         VatStorage storage vs = getVatStorage();
         Ilk storage i = vs.ilks[ilk];
-               if (key == "line") { i.line = _val;
-        } else if (key == "dust") { i.dust = _val;
-        } else if (key == "hook") { i.hook = address(bytes20(val));
+        if (key == "line") {
+            i.line = _val;
+        } else if (key == "dust") {
+            i.dust = _val;
+        } else if (key == "hook") {
+            i.hook = address(bytes20(val));
         } else if (key == "chop") {
             must(_val, RAY, 10 * RAY);
             i.chop = _val;
@@ -309,13 +319,14 @@ contract Vat is Bank {
             must(_val, RAY, _FEE_MAX);
             _drip(ilk);
             i.fee = _val;
-        } else { revert ErrWrongKey(); }
+        } else {
+            revert ErrWrongKey();
+        }
         emit NewPalm1(key, ilk, bytes32(val));
     }
 
     // delegatecall the ilk's hook
-    function _hookcall(bytes32 i, bytes memory indata)
-      internal returns (bytes memory outdata) {
+    function _hookcall(bytes32 i, bytes memory indata) internal returns (bytes memory outdata) {
         // call will succeed if nonzero hook has no code (i.e. EOA)
         address hook = getVatStorage().ilks[i].hook;
         if (hook == address(0)) revert ErrNoHook();
@@ -328,37 +339,26 @@ contract Vat is Bank {
     // similar to _hookcall, but uses staticcall to avoid modifying state
     // can't delegatecall within a view function
     // so, _hookview calls hookcallext instead, which delegatecalls _hookcall
-    function _hookview(bytes32 i, bytes memory indata)
-      internal view returns (bytes memory outdata) {
+    function _hookview(bytes32 i, bytes memory indata) internal view returns (bytes memory outdata) {
         bool ok;
-        (ok, outdata) = address(this).staticcall(
-            abi.encodeWithSelector(Vat.hookcallext.selector, i, indata)
-        );
+        (ok, outdata) = address(this).staticcall(abi.encodeWithSelector(Vat.hookcallext.selector, i, indata));
         if (!ok) bubble(outdata);
         outdata = abi.decode(outdata, (bytes));
     }
 
     // helps caller call hook functions without delegatecall
-    function hookcallext(bytes32 i, bytes memory indata)
-      external payable returns (bytes memory) {
+    function hookcallext(bytes32 i, bytes memory indata) external payable returns (bytes memory) {
         if (msg.sender != address(this)) revert ErrHookCallerNotBank();
         return _hookcall(i, indata);
     }
 
-    function filh(bytes32 ilk, bytes32 key, bytes32[] calldata xs, bytes32 val)
-      external payable onlyOwner _flog_ {
-        _hookcall(ilk, abi.encodeWithSignature(
-            "file(bytes32,bytes32,bytes32[],bytes32)", key, ilk, xs, val
-        ));
+    function filh(bytes32 ilk, bytes32 key, bytes32[] calldata xs, bytes32 val) external payable onlyRole _flog_ {
+        _hookcall(ilk, abi.encodeWithSignature("file(bytes32,bytes32,bytes32[],bytes32)", key, ilk, xs, val));
     }
 
-    function geth(bytes32 ilk, bytes32 key, bytes32[] calldata xs)
-      external view returns (bytes32) {
+    function geth(bytes32 ilk, bytes32 key, bytes32[] calldata xs) external view returns (bytes32) {
         return abi.decode(
-            _hookview(ilk, abi.encodeWithSignature(
-                "get(bytes32,bytes32,bytes32[])", key, ilk, xs
-            )), (bytes32)
+            _hookview(ilk, abi.encodeWithSignature("get(bytes32,bytes32,bytes32[])", key, ilk, xs)), (bytes32)
         );
     }
-
 }

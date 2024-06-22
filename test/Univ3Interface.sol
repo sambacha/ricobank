@@ -7,7 +7,7 @@
 
 pragma solidity ^0.8.19;
 
-import { Ward } from '../lib/feedbase/src/mixin/ward.sol';
+import {Ward} from "../lib/feedbase/src/mixin/ward.sol";
 
 interface IERC721 {
     function transferFrom(address from, address to, uint256 tokenId) external;
@@ -30,20 +30,26 @@ interface INonfungiblePositionManager is IERC721 {
         uint256 deadline;
     }
 
-    function mint(MintParams calldata params) external
-        returns (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        );
+    function mint(MintParams calldata params)
+        external
+        returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
 
     function positions(uint256 tokenId)
-        external view returns (
-            uint96 nonce, address operator, address token0, address token1,
-            uint24 fee, int24 tickLower, int24 tickUpper, uint128 liquidity,
-            uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128,
-            uint128 tokensOwed0, uint128 tokensOwed1
+        external
+        view
+        returns (
+            uint96 nonce,
+            address operator,
+            address token0,
+            address token1,
+            uint24 fee,
+            int24 tickLower,
+            int24 tickUpper,
+            uint128 liquidity,
+            uint256 feeGrowthInside0LastX128,
+            uint256 feeGrowthInside1LastX128,
+            uint128 tokensOwed0,
+            uint128 tokensOwed1
         );
 
     function factory() external view returns (address);
@@ -69,19 +75,21 @@ interface IUniswapV3Pool {
     }
 
     function slot0()
-      external view returns (
-        uint160 sqrtPriceX96,
-        int24 tick,
-        uint16 observationIndex,
-        uint16 observationCardinality,
-        uint16 observationCardinalityNext,
-        uint8 feeProtocol,
-        bool unlocked
-    );
+        external
+        view
+        returns (
+            uint160 sqrtPriceX96,
+            int24 tick,
+            uint16 observationIndex,
+            uint16 observationCardinality,
+            uint16 observationCardinalityNext,
+            uint8 feeProtocol,
+            bool unlocked
+        );
 
     function initialize(uint160) external;
-    function mint(address,int24,int24,uint128,bytes calldata) external returns (uint,uint);
-    function swap(address,bool,int,uint160,bytes calldata) external returns (int,int);
+    function mint(address, int24, int24, uint128, bytes calldata) external returns (uint256, uint256);
+    function swap(address, bool, int256, uint160, bytes calldata) external returns (int256, int256);
     function token0() external view returns (address);
     function token1() external view returns (address);
     function tickSpacing() external view returns (int24);
@@ -91,15 +99,7 @@ interface IUniswapV3Pool {
 interface IUniswapV3Factory {
     function feeAmountTickSpacing(uint24 fee) external view returns (int24);
 
-    function getPool(
-        address tokenA,
-        address tokenB,
-        uint24 fee
-    ) external view returns (address pool);
+    function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address pool);
 
-    function createPool(
-        address tokenA,
-        address tokenB,
-        uint24 fee
-    ) external returns (address pool);
+    function createPool(address tokenA, address tokenB, uint24 fee) external returns (address pool);
 }
