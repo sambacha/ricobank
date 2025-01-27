@@ -2,14 +2,17 @@
 
 // Copyright (C) 2021-2024 halys
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
-import { OwnableInternal, OwnableStorage } from "../lib/solidstate-solidity/contracts/access/OwnableInternal.sol";
+
 import { Math } from "./mixin/math.sol";
+
 import { Flog } from "./mixin/flog.sol";
 import { Palm } from "./mixin/palm.sol";
 import { Gem }  from "../lib/gemfab/src/gem.sol";
 import { Feedbase } from "../lib/feedbase/src/Feedbase.sol";
+import { OwnableInternal, OwnableStorage } from "../lib/solidstate-solidity/contracts/access/ownable/OwnableInternal.sol";
+
 
 abstract contract Bank is Math, Flog, Palm, OwnableInternal {
 

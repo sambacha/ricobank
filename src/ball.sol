@@ -9,7 +9,7 @@
 
 pragma solidity ^0.8.19;
 
-import {Diamond, IDiamondCuttable} from "../lib/solidstate-solidity/contracts/proxy/diamond/Diamond.sol";
+import {SolidStateDiamond, ISolidStateDiamondCuttable} from "../lib/solidstate-solidity/contracts/proxy/diamond/SolidStatediamond.sol";
 import {Block} from "../lib/feedbase/src/mixin/Read.sol";
 import {ChainlinkAdapter} from "../lib/feedbase/src/adapters/ChainlinkAdapter.sol";
 import {Divider} from "../lib/feedbase/src/combinators/Divider.sol";
