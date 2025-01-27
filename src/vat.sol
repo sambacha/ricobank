@@ -55,20 +55,9 @@ contract Vat is Bank {
     error ErrDebtCeil();
     error ErrMultiIlk();
     error ErrHookData();
-    error ErrLock();
     error ErrSafeBail();
     error ErrHookCallerNotBank();
     error ErrNoHook();
-
-    // lock for CDP manipulation functions
-    // not necessary for drip, because frob and bail drip
-    modifier _lock_ {
-        VatStorage storage vs = getVatStorage();
-        if (vs.lock == LOCKED) revert ErrLock();
-        vs.lock = LOCKED;
-        _;
-        vs.lock = UNLOCKED;
-    }
 
     function init(bytes32 ilk, address hook)
       external payable onlyOwner _flog_
@@ -217,11 +206,13 @@ contract Vat is Bank {
 
         // bill is the debt hook will attempt to cover when auctioning ink
         uint dtab = art * rack;
-        uint owed = dtab / RAY;
-        uint bill = rmul(ilk.chop, owed);
+        uint bill = rmul(ilk.chop, dtab / RAY);
 
         ilk.tart -= art;
         emit NewPalm1("tart", i, bytes32(ilk.tart));
+
+        // chill if surplus exceeds deficit
+        bool chill = vs.sin / RAY <= vs.joy;
 
         // record the bad debt for vow to heal
         vs.sin += dtab;
@@ -229,11 +220,19 @@ contract Vat is Bank {
 
         // ink auction
         Hook.BHParams memory p = Hook.BHParams(
-            i, u, bill, owed, msg.sender, deal, tot
+            i, u, bill, dtab / RAY, msg.sender, deal, tot
         );
-        return abi.decode(_hookcall(
+        bytes memory res = abi.decode(_hookcall(
             i, abi.encodeWithSelector(Hook.bailhook.selector, p)
         ), (bytes));
+
+        // when switching from surplus to potential deficit, reset vow auction
+        if (chill && vs.sin / RAY > vs.joy) {
+            getVowStorage().ramp.bel = block.timestamp;
+            emit NewPalm0("bel", bytes32(block.timestamp));
+        }
+
+        return res;
     }
 
     function drip(bytes32 i) external payable _flog_ { _drip(i); }
@@ -273,24 +272,6 @@ contract Vat is Bank {
 
         vs.joy       = vs.joy + (all / RAY);
         emit NewPalm0("joy", bytes32(vs.joy));
-    }
-
-    // flash borrow
-    // locked with itself to avoid flashing more than MINT
-    function flash(address code, bytes calldata data)
-      external payable returns (bytes memory result) {
-        // lock->mint->call->burn->unlock
-        VatStorage storage vs = getVatStorage();
-        if (vs.flock == LOCKED) revert ErrLock();
-        vs.flock = LOCKED;
-
-        getBankStorage().rico.mint(code, _MINT);
-        bool ok;
-        (ok, result) = code.call(data);
-        if (!ok) bubble(result);
-        getBankStorage().rico.burn(code, _MINT);
-
-        vs.flock = UNLOCKED;
     }
 
     function filk(bytes32 ilk, bytes32 key, bytes32 val)
